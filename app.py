@@ -5,7 +5,7 @@ app = FastAPI()
 
 @app.get("/")
 def read_root():
-    return "Hello World"
+    return {"Hello": "World"}
 
 @app.get("/requestall/")
 def requestall():
