@@ -49,7 +49,7 @@ def requestall():
     return results
 
 @app.get("/request/")
-async def process_data(trans_num: str = Query(..., description="Description for input7")):
+async def process_data(trans_num: str = Query(..., description="Enter Transaction ID : ")):
     
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()

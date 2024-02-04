@@ -26,12 +26,12 @@ class MyApp extends StatelessWidget {
   }
 }
 
-Future<Map<String, dynamic>> fetchData() async {
-  final apiUrl = 'https://awaited-troll-privately.ngrok-free.app/requestall/';
+Future<List<dynamic>> fetchData(String apiUrl) async {
   final response = await http.get(Uri.parse(apiUrl));
 
   if (response.statusCode == 200) {
-    return json.decode(response.body);
+    List<dynamic> jsonData = json.decode(utf8.decode(response.bodyBytes));
+    return jsonData;
   } else {
     throw Exception('Failed to load data');
   }
@@ -59,17 +59,15 @@ class LoginForm extends StatelessWidget {
           SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
-              // Add your authentication logic here
               String enteredUsername = usernameController.text;
               String enteredPassword = passwordController.text;
 
-              if (enteredUsername == 'Admin' && enteredPassword == 'Admin') {
+              if (enteredUsername == 'a' && enteredPassword == 'a') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => NextPage()),
                 );
               } else {
-                // Show an error message
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
@@ -102,43 +100,91 @@ class NextPage extends StatefulWidget {
 
 class _NextPageState extends State<NextPage> {
   int _selectedIndex = 0;
+  List<dynamic>? names;
+
+  List<String> jsonUrls = [
+    'https://awaited-troll-privately.ngrok-free.app/requestall/',
+    'https://awaited-troll-privately.ngrok-free.app/requestall/',
+  ];
+
+  Future<List<dynamic>> fetchDataFromUrl(String apiUrl) async {
+    final response = await http.get(Uri.parse(apiUrl));
+
+    if (response.statusCode == 200) {
+      List<dynamic> jsonData = json.decode(utf8.decode(response.bodyBytes));
+      return jsonData;
+    } else {
+      throw Exception('Failed to load data');
+    }
+  }
+
+  Future<void> refreshData() async {
+    try {
+      List<dynamic>? newData = await fetchDataFromUrl(jsonUrls[0]);
+      setState(() {
+        names = newData;
+      });
+    } catch (error) {
+      print('Error refreshing data: $error');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Fraud Detection System'),
+        title: Text('Fraud Detection'),
       ),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Center(
-            child: Text('This is the next page.'),
-          ),
-          Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              FutureBuilder(
-                future: fetchData(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return CircularProgressIndicator();
-                  } else if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  } else {
-                    return Text('API Data: ${snapshot.data}');
-                  }
-                },
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: refreshData,
+              child: Text('Refresh'),
+            ),
+            SizedBox(height: 10),
+            if (names != null)
+              Expanded(
+                child: ListView.builder(
+                  itemCount: names!.length,
+                  itemBuilder: (context, index) {
+                    var trans_num = names?[index]['trans_num'];
+                    var class_ = names?[index]['class'];
+                    var prediction = names?[index]['prediction'];
+                    var textColor = class_ == 0 ? Colors.green : Colors.red;
+
+                    return Column(
+                      children: [
+                        ListTile(
+                          title: Text(
+                            'Trx No : $trans_num',
+                            style: TextStyle(fontSize: 14),
+                          ),
+                        ),
+                        
+                        ListTile(
+                          title: Text(
+                            'Prediction : $prediction',
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        Divider(),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ],
-          ),
-          SizedBox(height: 20),
-        ],
+            if (names == null) Text('No data available'),
+          ],
+        ),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.blue, // Customize the background color
+          color: Colors.blue,
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.3),
@@ -164,13 +210,11 @@ class _NextPageState extends State<NextPage> {
             setState(() {
               _selectedIndex = index;
               if (_selectedIndex == 0) {
-                // Navigate to the Home page
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => HomePage()),
                 );
               } else if (_selectedIndex == 1) {
-                // Navigate to the Settings page
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => SettingsPage()),
@@ -178,9 +222,9 @@ class _NextPageState extends State<NextPage> {
               }
             });
           },
-          selectedItemColor: Colors.white, // Customize the selected item color
-          unselectedItemColor: Colors.grey, // Customize the unselected item color
-          backgroundColor: Colors.transparent, // Make the background transparent
+          selectedItemColor: Colors.white,
+          unselectedItemColor: const Color.fromARGB(255, 251, 237, 237),
+          backgroundColor: Colors.transparent,
         ),
       ),
     );

@@ -2,6 +2,8 @@ import sqlite3
 import time
 import pandas as pd
 import random
+import smtplib
+from email.message import EmailMessage
 
 conn = sqlite3.connect('database.db')
 cursor = conn.cursor()
@@ -45,21 +47,39 @@ def insert_data(dat):
 
 df = pd.read_csv('fraudDataAnon.csv', index_col=0)
 
+def alert(trxno):
+
+    sender = "emailalerts76@gmail.com"
+    receiver = "zerolegion5@gmail.com"
+
+    s = smtplib.SMTP('smtp.gmail.com', 587)
+    s.starttls()
+    s.login(sender, "dyul espr lymt wjwa")
+
+    em = EmailMessage()
+    em['From'] = sender
+    em['To'] = receiver
+    em['Subject'] = f"⚠️ Critical Level ALERT - {trxno}"
+    em.set_content(f'Transaction {trxno} has been deteced as fraud. Immediate action required. Predefined solutions include adding the user to a blacklist and forward to higher ranking personnel and authorities related to Fraud Management.') 
+
+    s.sendmail(sender, receiver, em.as_string())
+    s.quit()
+
 try:
     while True:
 
-        threshold = 97
-        val = random.randint(0,100)
+        threshold = 199
+        val = random.randint(0,200)
 
         dat = df.iloc[random.randint(0, df.shape[0] - 1), :]
 
-        if val < threshold and dat.iloc[1] == 1:
+        if val <= threshold and dat.iloc[1] == 1:
 
             continue
 
         if dat.iloc[1] == 1:
 
-            print('Fraud')
+            alert(dat.iloc[0])
         
         data = list(dat.values)
         data.pop(1)
