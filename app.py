@@ -48,7 +48,7 @@ def requestall():
     conn.close()
     return results
 
-@app.get("/request/")
+@app.post("/request/")
 async def process_data(trans_num: str = Query(..., description="Enter Transaction ID : ")):
     
     conn = sqlite3.connect('database.db')

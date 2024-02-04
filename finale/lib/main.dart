@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -93,6 +94,20 @@ class LoginForm extends StatelessWidget {
   }
 }
 
+class FeedPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Feed Page'),
+      ),
+      body: Center(
+        child: Text('This is the Feed page.'),
+      ),
+    );
+  }
+}
+
 class NextPage extends StatefulWidget {
   @override
   _NextPageState createState() => _NextPageState();
@@ -134,15 +149,17 @@ class _NextPageState extends State<NextPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Fraud Detection'),
+        actions: [
+          IconButton(
+            onPressed: refreshData,
+            icon: Icon(Icons.refresh),
+          ),
+        ],
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ElevatedButton(
-              onPressed: refreshData,
-              child: Text('Refresh'),
-            ),
             SizedBox(height: 10),
             if (names != null)
               Expanded(
@@ -151,6 +168,7 @@ class _NextPageState extends State<NextPage> {
                   itemBuilder: (context, index) {
                     var trans_num = names?[index]['trans_num'];
                     var class_ = names?[index]['class'];
+                    var datetime = names?[index]['datetime'];
                     var prediction = names?[index]['prediction'];
                     var textColor = class_ == 0 ? Colors.green : Colors.red;
 
@@ -158,11 +176,10 @@ class _NextPageState extends State<NextPage> {
                       children: [
                         ListTile(
                           title: Text(
-                            'Trx No : $trans_num',
+                            'Trx No : $trans_num\nTime : $datetime',
                             style: TextStyle(fontSize: 14),
                           ),
                         ),
-                        
                         ListTile(
                           title: Text(
                             'Prediction : $prediction',
@@ -198,26 +215,29 @@ class _NextPageState extends State<NextPage> {
           items: [
             BottomNavigationBarItem(
               icon: Icon(Icons.home),
-              label: 'Home',
+              label: 'Feed',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
-              label: 'Settings',
+              icon: Icon(Icons.add_task),
+              label: 'Validation',
             ),
           ],
           currentIndex: _selectedIndex,
           onTap: (index) {
             setState(() {
+              if (_selectedIndex == index) {
+                return;
+              }
               _selectedIndex = index;
               if (_selectedIndex == 0) {
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
+                  MaterialPageRoute(builder: (context) => FeedPage()),
                 );
               } else if (_selectedIndex == 1) {
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => SettingsPage()),
+                  MaterialPageRoute(builder: (context) => ValidationPage()),
                 );
               }
             });
@@ -254,6 +274,105 @@ class SettingsPage extends StatelessWidget {
       ),
       body: Center(
         child: Text('This is the Settings page.'),
+      ),
+    );
+  }
+}
+
+class ValidationPage extends StatefulWidget {
+  @override
+  _ValidationPageState createState() => _ValidationPageState();
+}
+
+class _ValidationPageState extends State<ValidationPage> {
+  TextEditingController inputController = TextEditingController();
+  String output = '';
+  late Timer _timer; // Timer for auto-refresh
+
+  Future<void> sendInputToApi(String input) async {
+    String apiUrl = 'https://awaited-troll-privately.ngrok-free.app/request/?trans_num=' + input;
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {"accept":"application/json"},
+        body: {},
+      );
+
+      if (response.statusCode == 200) {
+        Map<String, dynamic> responseData = json.decode(utf8.decode(response.bodyBytes));
+        setState(() {
+          output = responseData['prediction'];
+        });
+      } else {
+        throw Exception('Failed to communicate with the API');
+      }
+    } catch (error) {
+      print('Error sending input to API: $error');
+      // Handle the error accordingly
+    }
+  }
+
+  // Function to refresh data
+  Future<void> refreshData() async {
+    try {
+      String input = inputController.text;
+      await sendInputToApi(input);
+    } catch (error) {
+      print('Error refreshing data: $error');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize timer to auto-refresh every 5 seconds
+    _timer = Timer.periodic(Duration(seconds: 5), (timer) {
+      refreshData();
+    });
+  }
+
+  @override
+  void dispose() {
+    // Dispose the timer when the page is disposed
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Validation Page'),
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          TextField(
+            controller: inputController,
+            decoration: InputDecoration(labelText: 'Enter Input'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              String input = inputController.text;
+              sendInputToApi(input);
+            },
+            child: Text('Send Input to API'),
+          ),
+          SizedBox(height: 20),
+          Text('Output from API: $output'),
+          Expanded(child: Container()), // Expanded to take remaining space
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => NextPage()),
+              );
+            },
+            child: Text('Return to Feed Page'),
+          ),
+        ],
       ),
     );
   }
