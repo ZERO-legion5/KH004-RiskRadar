@@ -23,7 +23,8 @@ cursor.execute('''
     timestamp_day FLOAT,
     timestamp_hour FLOAT,
     timestamp_min FLOAT,
-    timestamp_second FLOAT
+    timestamp_second FLOAT,
+    timestamp timestamp default current_timestamp
 );
 ''')
 conn.commit()
@@ -59,7 +60,7 @@ try:
         conn.commit()
         conn.close()
 
-        time.sleep(1)
+        time.sleep(2)
 
 except KeyboardInterrupt:
     print("Exiting the program.")
