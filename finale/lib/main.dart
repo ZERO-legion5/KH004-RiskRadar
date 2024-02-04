@@ -63,7 +63,7 @@ class LoginForm extends StatelessWidget {
               String enteredUsername = usernameController.text;
               String enteredPassword = passwordController.text;
 
-              if (enteredUsername == 'a' && enteredPassword == 'a') {
+              if (enteredUsername == 'admin' && enteredPassword == 'admin') {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => NextPage()),
