@@ -145,6 +145,19 @@ class _NextPageState extends State<NextPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+
+    // Initialize timer to refresh data every 5 seconds
+    Timer.periodic(Duration(seconds: 5), (Timer timer) {
+      refreshData();
+    });
+
+    // Initial data fetch
+    refreshData();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -184,7 +197,7 @@ class _NextPageState extends State<NextPage> {
                           title: Text(
                             'Prediction : $prediction',
                             style: TextStyle(
-                              color: textColor,
+                              color: textColor, // Color based on fraud class
                               fontSize: 14,
                             ),
                           ),
@@ -331,6 +344,9 @@ class _ValidationPageState extends State<ValidationPage> {
     _timer = Timer.periodic(Duration(seconds: 5), (timer) {
       refreshData();
     });
+
+    // Initial data fetch
+    refreshData();
   }
 
   @override
@@ -361,7 +377,13 @@ class _ValidationPageState extends State<ValidationPage> {
             child: Text('Send Input to API'),
           ),
           SizedBox(height: 20),
-          Text('Output from API: $output'),
+          Text(
+            'Output from API: $output',
+            style: TextStyle(
+              color: output == 'Non-Fraud' ? Colors.green : Colors.red,
+              fontSize: 16,
+            ),
+          ),
           Expanded(child: Container()), // Expanded to take remaining space
           ElevatedButton(
             onPressed: () {
