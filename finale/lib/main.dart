@@ -10,60 +10,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: LoginPage(),
-    );
-  }
-}
-
-class LoginPage extends StatefulWidget {
-  @override
-  _LoginPageState createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  TextEditingController _usernameController = TextEditingController();
-  TextEditingController _passwordController = TextEditingController();
-
-  Future<void> _login() async {
-    // Simulate login logic. In a real app, you would authenticate with your server.
-    String username = _usernameController.text;
-    String password = _passwordController.text;
-
-    // Assuming a successful login, navigate to the next page.
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HomePage(username: username),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Login Page'),
-      ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('Login Page'),
+        ),
+        body: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextField(
-              controller: _usernameController,
-              decoration: InputDecoration(labelText: 'Username'),
-            ),
-            SizedBox(height: 16.0),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: InputDecoration(labelText: 'Password'),
-            ),
-            SizedBox(height: 16.0),
-            ElevatedButton(
-              onPressed: _login,
-              child: Text('Login'),
-            ),
+            SizedBox(height: 20),
+            LoginForm(),
           ],
         ),
       ),
@@ -71,53 +26,190 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-class HomePage extends StatefulWidget {
-  final String username;
+Future<Map<String, dynamic>> fetchData() async {
+  final apiUrl = 'https://awaited-troll-privately.ngrok-free.app/requestall/';
+  final response = await http.get(Uri.parse(apiUrl));
 
-  HomePage({required this.username});
-
-  @override
-  _HomePageState createState() => _HomePageState();
+  if (response.statusCode == 200) {
+    return json.decode(response.body);
+  } else {
+    throw Exception('Failed to load data');
+  }
 }
 
-class _HomePageState extends State<HomePage> {
-  int likeCount = 0;
+class LoginForm extends StatelessWidget {
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
-  Future<void> toggleLike() async {
-    // Simulating an API request. Replace the URL with your actual API endpoint.
-    final String apiUrl = 'https://awaited-troll-privately.ngrok-free.app';
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          TextField(
+            controller: usernameController,
+            decoration: InputDecoration(labelText: 'Username'),
+          ),
+          TextField(
+            controller: passwordController,
+            obscureText: true,
+            decoration: InputDecoration(labelText: 'Password'),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              // Add your authentication logic here
+              String enteredUsername = usernameController.text;
+              String enteredPassword = passwordController.text;
 
-    // Simulating the like toggle logic.
-    likeCount++;
-
-    // Simulate an HTTP request to update the like count on the server
-    await http.get(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
+              if (enteredUsername == 'Admin' && enteredPassword == 'Admin') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => NextPage()),
+                );
+              } else {
+                // Show an error message
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('Authentication Failed'),
+                    content: Text('Invalid username or password.'),
+                    actions: [
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: Text('OK'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            },
+            child: Text('Login'),
+          ),
+        ],
+      ),
     );
-
-    // Update the UI
-    setState(() {});
   }
+}
+
+class NextPage extends StatefulWidget {
+  @override
+  _NextPageState createState() => _NextPageState();
+}
+
+class _NextPageState extends State<NextPage> {
+  int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Fraud Detection ${widget.username}'),
+        title: Text('Fraud Detection System'),
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Center(
+            child: Text('This is the next page.'),
+          ),
+          Spacer(),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              FutureBuilder(
+                future: fetchData(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  } else {
+                    return Text('API Data: ${snapshot.data}');
+                  }
+                },
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
+        ],
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.blue, // Customize the background color
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              spreadRadius: 5,
+              blurRadius: 7,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          items: [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings),
+              label: 'Settings',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          onTap: (index) {
+            setState(() {
+              _selectedIndex = index;
+              if (_selectedIndex == 0) {
+                // Navigate to the Home page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                );
+              } else if (_selectedIndex == 1) {
+                // Navigate to the Settings page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SettingsPage()),
+                );
+              }
+            });
+          },
+          selectedItemColor: Colors.white, // Customize the selected item color
+          unselectedItemColor: Colors.grey, // Customize the unselected item color
+          backgroundColor: Colors.transparent, // Make the background transparent
+        ),
+      ),
+    );
+  }
+}
+
+class HomePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Home Page'),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: toggleLike,
-              child: Text('Get Data'),
-            ),
-          ],
-        ),
+        child: Text('This is the Home page.'),
+      ),
+    );
+  }
+}
+
+class SettingsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Settings Page'),
+      ),
+      body: Center(
+        child: Text('This is the Settings page.'),
       ),
     );
   }

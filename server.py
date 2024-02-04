@@ -24,7 +24,7 @@ cursor.execute('''
     timestamp_hour FLOAT,
     timestamp_min FLOAT,
     timestamp_second FLOAT,
-    timestamp timestamp default current_timestamp
+    datetime DATE DEFAULT (datetime('now','localtime'))
 );
 ''')
 conn.commit()
@@ -34,7 +34,7 @@ def insert_data(dat):
     s = 'INSERT INTO KH (trans_num, merchant, category, amt, gender, lat, long, city_pop, job, age, timestamp_year, timestamp_month, timestamp_day, timestamp_hour, timestamp_min, timestamp_second) VALUES ('
     
     # Properly format trans_num within the SQL query
-    s += f'"{dat["trans_num"]}", '
+    s += f'"{dat[0]}", '
 
     # Add the rest of the values
     s += ', '.join(list(map(str, dat[1:])))
@@ -44,23 +44,36 @@ def insert_data(dat):
     conn.commit()
 
 df = pd.read_csv('fraudDataAnon.csv', index_col=0)
-df.drop(columns= ['is_fraud'],inplace=True)
 
 try:
     while True:
 
+        threshold = 97
+        val = random.randint(0,100)
+
         dat = df.iloc[random.randint(0, df.shape[0] - 1), :]
+
+        if val < threshold and dat.iloc[1] == 1:
+
+            continue
+
+        if dat.iloc[1] == 1:
+
+            print('Fraud')
+        
+        data = list(dat.values)
+        data.pop(1)
 
         conn = sqlite3.connect('database.db')
         cursor = conn.cursor()
 
         print(dat)
-        insert_data(dat)
+        insert_data(data)
 
         conn.commit()
         conn.close()
 
-        time.sleep(2)
+        time.sleep(random.randint(1,4))
 
 except KeyboardInterrupt:
     print("Exiting the program.")
